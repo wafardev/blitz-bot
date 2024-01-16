@@ -1,0 +1,23 @@
+{
+  "name": "golmon-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/server/index.js",
+    "dev": "nodemon ./src/server/index.js"
+  },
+  "author": "wafardev",
+  "license": "ISC",
+  "dependencies": {
+    "aes256": "^1.1.0",
+    "axios": "^1.6.5",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
+    "ethereumjs-wallet": "^1.0.2",
+    "ethers": "^5.7.2",
+    "express": "^4.18.2",
+    "pg": "^8.11.3"
+  }
+}
