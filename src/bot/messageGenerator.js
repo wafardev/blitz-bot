@@ -66,7 +66,7 @@ function generateWalletButtons(address) {
         { text: "Withdraw X ETH", callback_data: "withdrawXButton" },
       ],
       [
-        { text: "Reset Wallet", callback_data: "walletButton" },
+        { text: "Reset Wallet", callback_data: "walletResetButton" },
         { text: "Export Private Key", callback_data: "exportKeyButton" },
       ],
       [{ text: "Refresh", callback_data: "refreshWalletButton" }],
@@ -75,9 +75,63 @@ function generateWalletButtons(address) {
   return walletButtons;
 }
 
+const resetWalletText = `Are you sure you want to <b>reset</b> your GolmonBot Wallet?
+
+<b>WARNING</b>: This action is irreversible!
+
+GolmonBot will generate a new wallet for you and discard your old one.`;
+
+const exportKeyText =
+  "Are you sure you want to export your <b>Private Key</b>?";
+
+function exportOrResetButtons(exportOrReset) {
+  let cancel_button;
+  let confirm_button;
+
+  if (!exportOrReset) {
+    cancel_button = "exportKeyCancelButton";
+    confirm_button = "exportKeyConfirmButton";
+  } else {
+    cancel_button = "resetKeyCancelButton";
+    confirm_button = "resetKeyConfirmButton";
+  }
+
+  const buttons = {
+    inline_keyboard: [
+      [
+        { text: "Cancel", callback_data: `${cancel_button}` },
+        { text: "Confirm", callback_data: `${confirm_button}` },
+      ],
+    ],
+  };
+
+  return buttons;
+}
+
+function exportKeyConfirmText(key) {
+  return `Your <b>Private Key</b> is:
+  <code>${key}</code> (tap to copy)
+  
+You can now import the key into Metamask. 
+Please keep your key safe and do not share it with anyone.
+Delete this message once you are done.`;
+}
+
+const depositText = "To deposit, send ETH to below address:";
+
+function addressText(address) {
+  return `<code>${address}</code>`;
+}
+
 module.exports = {
   generateWelcomeMessage,
   startButtons,
   generateWalletButtons,
   generateWalletMessage,
+  depositText,
+  addressText,
+  exportKeyText,
+  exportOrResetButtons,
+  exportKeyConfirmText,
+  resetWalletText,
 };

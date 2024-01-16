@@ -11,6 +11,12 @@ const {
   startButtons,
   generateWalletButtons,
   generateWalletMessage,
+  depositText,
+  addressText,
+  exportKeyText,
+  exportOrResetButtons,
+  exportKeyConfirmText,
+  resetWalletText,
 } = require("./messageGenerator");
 const { getBalance } = require("./rpcCalls");
 
@@ -24,6 +30,9 @@ async function handleCommands(msg, chatId) {
       case "/start":
       case "/home":
         await startCommand(chatId);
+        break;
+      case "/wallet":
+        await walletCommand(chatId);
         break;
     }
   } catch (error) {
@@ -46,11 +55,29 @@ async function handleCallbacks(
         break;
       case "refreshWalletButton":
         await refreshCommand(chatId, messageId, oldMessage, callbackQueryId, 1);
+        break;
       case "walletButton":
         await walletCommand(chatId, callbackQueryId);
         break;
       case "closeButton":
+      case "exportKeyCancelButton":
+      case "resetKeyCancelButton":
         await closeCommand(chatId, messageId);
+        break;
+      case "depositButton":
+        await depositCommand(chatId, callbackQueryId);
+        break;
+      case "exportKeyButton":
+        await exportKeyCommand(chatId, callbackQueryId);
+        break;
+      case "exportKeyConfirmButton":
+        await exportKeyConfirmCommand(chatId, callbackQueryId);
+        break;
+      case "walletResetButton":
+        await walletResetCommand(chatId, callbackQueryId);
+        break;
+      case "walletResetButton":
+        await walletResetCommand(chatId, callbackQueryId);
         break;
     }
   } catch (error) {
@@ -174,6 +201,33 @@ async function refreshCommand(
   }
 }
 
+async function depositCommand(chatId, callbackQueryId) {
+  try {
+    const startTime = Date.now();
+    let data = await queryPool(chatId);
+
+    if (!data) {
+      console.log("Error: cannot refresh wallet.");
+    }
+
+    console.log(`Address: ${data.address}`);
+    const balance = await getBalance(data.address);
+    console.log("Balance:", balance);
+
+    await sendMessage(chatId, depositText);
+    console.log("Deposit text sent.");
+    await sendMessage(chatId, addressText(data.address));
+    console.log("Address sent.");
+    await answerCallbackQuery(callbackQueryId, false);
+
+    const endTime = Date.now();
+    console.log("Time taken:", endTime - startTime);
+  } catch (error) {
+    console.error("Error in depositCommand:", error.message);
+    // Handle the error appropriately (e.g., send an error message to the user)
+  }
+}
+
 async function walletCommand(chatId, callbackQueryId) {
   try {
     const startTime = Date.now();
@@ -191,12 +245,87 @@ async function walletCommand(chatId, callbackQueryId) {
     const walletButtons = generateWalletButtons(data.address);
 
     await sendMessageWithButtons(chatId, walletMessage, walletButtons);
+
+    if (callbackQueryId) {
+      await answerCallbackQuery(callbackQueryId, false);
+    }
+
+    const endTime = Date.now();
+    console.log("Time taken:", endTime - startTime);
+  } catch (error) {
+    console.error("Error in walletCommand:", error.message);
+    // Handle the error appropriately (e.g., send an error message to the user)
+  }
+}
+
+async function walletResetCommand(chatId, callbackQueryId) {
+  try {
+    const startTime = Date.now();
+
+    const message = resetWalletText;
+
+    await sendMessageWithButtons(chatId, message, startButtons);
+    console.log("Reset text sent.");
+
     await answerCallbackQuery(callbackQueryId, false);
 
     const endTime = Date.now();
     console.log("Time taken:", endTime - startTime);
   } catch (error) {
-    console.error("Error in refreshCommand:", error.message);
+    console.error("Error in walletResetCommand:", error.message);
+    // Handle the error appropriately (e.g., send an error message to the user)
+  }
+}
+
+async function exportKeyCommand(chatId, callbackQueryId) {
+  try {
+    const startTime = Date.now();
+
+    console.log(exportOrResetButtons(0));
+    console.log(exportKeyText);
+    await sendMessageWithButtons(
+      chatId,
+      exportKeyText,
+      exportOrResetButtons(0)
+    );
+    console.log("Text sent.");
+
+    await answerCallbackQuery(callbackQueryId, false);
+
+    const endTime = Date.now();
+    console.log("Time taken:", endTime - startTime);
+  } catch (error) {
+    console.error("Error in exportKeyCommand:", error.message);
+    // Handle the error appropriately (e.g., send an error message to the user)
+  }
+}
+
+async function exportKeyConfirmCommand(chatId, callbackQueryId) {
+  try {
+    const startTime = Date.now();
+
+    let data = await queryPool(chatId);
+
+    if (!data) {
+      console.log("Error: cannot refresh wallet.");
+    }
+
+    console.log(`Address: ${data.address}`);
+    console.log(`Encrypted key: ${data.encrypted_key}`);
+
+    const privateKey = decryptPassphrase(
+      deriveKey(chatId.toString()),
+      data.encrypted_key
+    );
+
+    const privateMessage = exportKeyConfirmText(privateKey);
+
+    await sendMessage(chatId, privateMessage);
+    await answerCallbackQuery(callbackQueryId, false);
+    const endTime = Date.now();
+    console.log("Time taken:", endTime - startTime);
+  } catch (error) {
+    console.error("Error in exportKeyConfirmCommand:", error.message);
     // Handle the error appropriately (e.g., send an error message to the user)
   }
 }
@@ -218,6 +347,14 @@ async function sendMessageWithButtons(chatId, message, buttons) {
     text: message,
     parse_mode: "HTML",
     reply_markup: JSON.stringify(buttons),
+  });
+}
+
+async function sendMessage(chatId, message) {
+  await axios.post(`${TELEGRAM_API}/sendMessage`, {
+    chat_id: chatId,
+    text: message,
+    parse_mode: "HTML",
   });
 }
 

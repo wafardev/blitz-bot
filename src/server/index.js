@@ -27,13 +27,14 @@ app.post(URI, async (req, res) => {
   try {
     if (req.body.callback_query) {
       const {
-        data,
         callback_query: {
           from: { id: chatId },
           message: { message_id: messageId, text: oldMessage },
           id: callbackQueryId,
+          data,
         },
       } = req.body;
+      console.log(req.body.callback_query.data);
 
       console.log(
         `Received callback query data: ${data} from chat ID: ${chatId}`
