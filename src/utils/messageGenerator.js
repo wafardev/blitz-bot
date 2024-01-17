@@ -75,31 +75,69 @@ function generateWalletButtons(address) {
   return walletButtons;
 }
 
-const resetWalletText = `Are you sure you want to <b>reset</b> your GolmonBot Wallet?
+function resetWalletText(textNum) {
+  let text;
 
-<b>WARNING</b>: This action is irreversible!
+  switch (textNum) {
+    case 0:
+      text = `Are you sure you want to <b>reset</b> your GolmonBot Wallet?
+
+<b>WARNING: This action is irreversible!</b>
 
 GolmonBot will generate a new wallet for you and discard your old one.`;
+      break;
+    case 1:
+      text = `<b>CONFIRM:</b> Are you sure you want to <b>reset</b> your GolmonBot Wallet?
+
+<b>WARNING: This action is irreversible!</b>`;
+      break;
+  }
+  return text;
+}
 
 const exportKeyText =
   "Are you sure you want to export your <b>Private Key</b>?";
 
-function exportOrResetButtons(exportOrReset) {
-  let cancel_button;
+function walletResetConfirmedText(key, textNum) {
+  let text;
+
+  switch (textNum) {
+    case 0:
+      text = `Your <b>Private Key</b> for your <b>OLD</b> wallet is:
+
+<code>${key}</code> (tap to copy)
+You can now import the key into Metamask.
+Save this key in case you need to access this wallet again.`;
+      break;
+    case 1:
+      text = `<b>Success:</b> Your new wallet is:
+<code>${key}</code> (tap to copy)
+
+You can now send ETH to this address to deposit into your new wallet.
+Press refresh to see your new wallet.`;
+      break;
+  }
+  return text;
+}
+function cancelOrConfirmButtons(actionNum) {
   let confirm_button;
 
-  if (!exportOrReset) {
-    cancel_button = "exportKeyCancelButton";
-    confirm_button = "exportKeyConfirmButton";
-  } else {
-    cancel_button = "resetKeyCancelButton";
-    confirm_button = "resetKeyConfirmButton";
+  switch (actionNum) {
+    case 0:
+      confirm_button = "exportKeyConfirmButton";
+      break;
+    case 1:
+      confirm_button = "resetKeyToConfirmButton";
+      break;
+    case 2:
+      confirm_button = "resetKeyConfirmedButton";
+      break;
   }
 
   const buttons = {
     inline_keyboard: [
       [
-        { text: "Cancel", callback_data: `${cancel_button}` },
+        { text: "Cancel", callback_data: `closeButton` },
         { text: "Confirm", callback_data: `${confirm_button}` },
       ],
     ],
@@ -123,6 +161,13 @@ function addressText(address) {
   return `<code>${address}</code>`;
 }
 
+function stripHtmlTags(text) {
+  return text
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 module.exports = {
   generateWelcomeMessage,
   startButtons,
@@ -131,7 +176,9 @@ module.exports = {
   depositText,
   addressText,
   exportKeyText,
-  exportOrResetButtons,
+  cancelOrConfirmButtons,
   exportKeyConfirmText,
   resetWalletText,
+  walletResetConfirmedText,
+  stripHtmlTags,
 };
