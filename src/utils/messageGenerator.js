@@ -155,6 +155,33 @@ Please keep your key safe and do not share it with anyone.
 Delete this message once you are done.`;
 }
 
+function withdrawSwapText(withdrawOrSwap, successOrFailure, txHashOrError) {
+  let txText;
+  const action = withdrawOrSwap ? "Swap" : "Withdraw";
+  const success = successOrFailure ? "Failed" : "Successful";
+  if (txHashOrError.startsWith("0x")) {
+    txText = `Transaction Hash:
+    https://etherscan.io/tx/${txHashOrError}`;
+  } else {
+    txText = `Error: ${txHashOrError}`;
+  }
+
+  const text = `<b>${action} ${success}</b>
+
+${txText}`;
+
+  return text;
+}
+
+function invalidText(amountOrAddress, text, balance) {
+  const invalid = amountOrAddress ? "address" : "amount";
+  const correctText = amountOrAddress
+    ? "correct Ethereum address"
+    : `number between 0 and ${balance}`;
+  return `Invalid ${invalid} (${text}) entered.
+Please reply with a ${correctText}:`;
+}
+
 const depositText = "To deposit, send ETH to below address:";
 
 function addressText(address) {
@@ -166,6 +193,19 @@ function stripHtmlTags(text) {
     .replace(/<[^>]*>/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function findNumbersInDocstring(docstring) {
+  // Regular expression to find float or int numbers
+  const numberRegex = /[-+]?\d*\.?\d+/g;
+
+  // Match numbers in the docstring
+  const matches = docstring.match(numberRegex);
+
+  // Convert matched strings to actual numbers
+  const numbers = matches ? matches.map((match) => parseFloat(match)) : [];
+
+  return numbers[0];
 }
 
 module.exports = {
@@ -181,4 +221,7 @@ module.exports = {
   resetWalletText,
   walletResetConfirmedText,
   stripHtmlTags,
+  withdrawSwapText,
+  invalidText,
+  findNumbersInDocstring,
 };

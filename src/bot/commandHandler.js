@@ -7,23 +7,50 @@ const {
   exportKeyCommand,
   exportKeyConfirmCommand,
   walletResetCommand,
+  walletResetConfirmedCommand,
+  withdrawEthCommand,
+  withdrawCompletedCommand,
+  withdrawToCompleteCommand,
 } = require("./commands");
+
+const commandHandlers = {
+  "/menu": startCommand,
+  "/start": startCommand,
+  "/home": startCommand,
+  "/wallet": walletCommand,
+};
+
+const callbackHandlers = {
+  refreshButton: refreshCommand.bind(null, 0),
+  refreshWalletButton: refreshCommand.bind(null, 1),
+  walletButton: walletCommand,
+  closeButton: closeCommand,
+  depositButton: depositCommand,
+  exportKeyButton: exportKeyCommand,
+  exportKeyConfirmButton: exportKeyConfirmCommand,
+  walletResetButton: walletResetCommand.bind(null, 0),
+  resetKeyToConfirmButton: walletResetCommand.bind(null, 1),
+  resetKeyConfirmedButton: walletResetConfirmedCommand,
+  withdrawAllButton: withdrawEthCommand.bind(null, true),
+  withdrawXButton: withdrawEthCommand.bind(null, false),
+};
+
+const replyHandlers = {
+  "Reply with the destination address.": withdrawCompletedCommand,
+  "Invalid address": withdrawCompletedCommand,
+  "You are withdrawing": withdrawCompletedCommand,
+  "Reply with the amount to withdraw.": withdrawToCompleteCommand,
+  "Invalid amount": withdrawToCompleteCommand,
+};
 
 async function handleCommands(msg, chatId) {
   try {
-    switch (msg) {
-      case "/menu":
-      case "/start":
-      case "/home":
-        await startCommand(chatId);
-        break;
-      case "/wallet":
-        await walletCommand(chatId);
-        break;
+    const handler = commandHandlers[msg];
+    if (handler) {
+      await handler(chatId);
     }
   } catch (error) {
     console.error("Error handling commands:", error.message);
-    // Handle the error appropriately (e.g., send an error message to the user)
   }
 }
 
@@ -35,38 +62,24 @@ async function handleCallbacks(
   callbackQueryId
 ) {
   try {
-    switch (query) {
-      case "refreshButton":
-        await refreshCommand(chatId, messageId, oldMessage, callbackQueryId, 0);
-        break;
-      case "refreshWalletButton":
-        await refreshCommand(chatId, messageId, oldMessage, callbackQueryId, 1);
-        break;
-      case "walletButton":
-        await walletCommand(chatId, callbackQueryId);
-        break;
-      case "closeButton":
-        await closeCommand(chatId, messageId);
-        break;
-      case "depositButton":
-        await depositCommand(chatId, callbackQueryId);
-        break;
-      case "exportKeyButton":
-        await exportKeyCommand(chatId, callbackQueryId);
-        break;
-      case "exportKeyConfirmButton":
-        await exportKeyConfirmCommand(chatId, callbackQueryId);
-        break;
-      case "walletResetButton":
-        await walletResetCommand(chatId, callbackQueryId, 0);
-        break;
-      case "resetKeyToConfirmButton":
-        await walletResetCommand(chatId, callbackQueryId, 1);
-        break;
+    const handler = callbackHandlers[query];
+    if (handler) {
+      await handler(chatId, messageId, oldMessage, callbackQueryId);
     }
   } catch (error) {
-    console.error("Error handling commands:", error.message);
+    console.error("Error handling callbacks:", error.message);
   }
 }
 
-module.exports = { handleCommands, handleCallbacks };
+async function handleReplies(botText, userText, chatId) {
+  try {
+    const handler = replyHandlers[botText];
+    if (handler) {
+      await handler(chatId, userText, botText);
+    }
+  } catch (error) {
+    console.error("Error handling replies:", error.message);
+  }
+}
+
+module.exports = { handleCommands, handleCallbacks, handleReplies };

@@ -5,30 +5,43 @@ const TOKEN = process.env.TOKEN;
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
 
 async function sendMessageWithButtons(chatId, message, buttons) {
-  await axios.post(`${TELEGRAM_API}/sendMessage`, {
+  const messageData = await axios.post(`${TELEGRAM_API}/sendMessage`, {
     chat_id: chatId,
     text: message,
     parse_mode: "HTML",
     reply_markup: JSON.stringify(buttons),
   });
+  return messageData;
 }
 
 async function sendMessage(chatId, message) {
-  await axios.post(`${TELEGRAM_API}/sendMessage`, {
+  const messageData = await axios.post(`${TELEGRAM_API}/sendMessage`, {
     chat_id: chatId,
     text: message,
     parse_mode: "HTML",
   });
+  return messageData;
+}
+
+async function sendMessageWithForcedReply(chatId, message) {
+  const messageData = await axios.post(`${TELEGRAM_API}/sendMessage`, {
+    chat_id: chatId,
+    text: message,
+    parse_mode: "HTML",
+    reply_markup: JSON.stringify({ force_reply: true }),
+  });
+  return messageData;
 }
 
 async function editMessage(chatId, messageId, newText, newButtons) {
-  await axios.post(`${TELEGRAM_API}/editMessageText`, {
+  const messageData = await axios.post(`${TELEGRAM_API}/editMessageText`, {
     chat_id: chatId,
     message_id: messageId,
     text: newText,
     parse_mode: "HTML",
     reply_markup: JSON.stringify(newButtons),
   });
+  return messageData;
 }
 
 async function deleteMessage(chatId, messageId) {
@@ -48,6 +61,7 @@ async function answerCallbackQuery(callbackQueryId, showAlert) {
 module.exports = {
   sendMessageWithButtons,
   sendMessage,
+  sendMessageWithForcedReply,
   editMessage,
   deleteMessage,
   answerCallbackQuery,

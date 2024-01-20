@@ -7,6 +7,7 @@ const {
 const {
   sendMessage,
   sendMessageWithButtons,
+  sendMessageWithForcedReply,
   editMessage,
   deleteMessage,
   answerCallbackQuery,
@@ -24,8 +25,11 @@ const {
   resetWalletText,
   walletResetConfirmedText,
   stripHtmlTags,
+  withdrawSwapText,
+  invalidText,
+  findNumbersInDocstring,
 } = require("../utils/messageGenerator");
-const { getBalance } = require("../utils/rpcCalls");
+const { getBalance, withdrawEth } = require("../utils/rpcCalls");
 
 async function startCommand(chatId) {
   try {
@@ -38,7 +42,7 @@ async function startCommand(chatId) {
     }
 
     console.log(`Address: ${data.address}`);
-    const balance = await getBalance(data.address);
+    const balance = await getBalance(data.address, false);
     console.log("Balance:", balance);
 
     const message = generateWelcomeMessage(balance, data.address);
@@ -72,7 +76,7 @@ async function refreshCommand(
     }
 
     console.log(`Address: ${data.address}`);
-    const balance = await getBalance(data.address);
+    const balance = await getBalance(data.address, false);
     console.log("Balance:", balance);
 
     switch (refreshNum) {
@@ -113,7 +117,7 @@ async function depositCommand(chatId, callbackQueryId) {
     }
 
     console.log(`Address: ${data.address}`);
-    const balance = await getBalance(data.address);
+    const balance = await getBalance(data.address, false);
     console.log("Balance:", balance);
 
     await sendMessage(chatId, depositText);
@@ -140,7 +144,7 @@ async function walletCommand(chatId, callbackQueryId) {
     }
 
     console.log(`Address: ${data.address}`);
-    const balance = await getBalance(data.address);
+    const balance = await getBalance(data.address, false);
     console.log("Balance:", balance);
 
     const walletMessage = generateWalletMessage(balance, data.address);
@@ -254,6 +258,123 @@ async function exportKeyConfirmCommand(chatId, callbackQueryId) {
   }
 }
 
+async function withdrawEthCommand(chatId, callbackQueryId, withdrawAll) {
+  try {
+    const startTime = Date.now();
+
+    if (withdrawAll) {
+      const message = "Reply with the destination address.";
+      await sendMessageWithForcedReply(chatId, message);
+    } else {
+      const data = await queryPool(chatId);
+      const balance = await getBalance(data.address, true);
+      const message = `Reply with the amount to withdraw. (0 - ${balance})`;
+      await sendMessageWithForcedReply(chatId, message);
+    }
+    await answerCallbackQuery(callbackQueryId, false);
+    const endTime = Date.now();
+    console.log("Time taken:", endTime - startTime);
+    console.log("Withdraw text sent.");
+  } catch (error) {
+    console.error("Error in withdrawEthCommand:", error.message);
+    // Handle the error appropriately (e.g., send an error message to the user)
+  }
+}
+
+async function withdrawCompletedCommand(chatId, userText, amountInText) {
+  try {
+    const startTime = Date.now();
+
+    if (userText.startsWith("0x") && userText.length === 42) {
+      const messageData = await sendMessage(
+        chatId,
+        "Initializing transaction..."
+      );
+      const messageId = messageData.data.result.message_id;
+      console.log(messageData.data.result.message_id);
+
+      const depositAddress = userText;
+      const data = await queryPool(chatId);
+      const privateKey = decryptPrivateKey(chatId, data.encrypted_key);
+      let tx;
+      if (amountInText) {
+        const amount = findNumbersInDocstring(amountInText);
+        tx = withdrawEth(privateKey, depositAddress, amount);
+      } else {
+        tx = withdrawEth(privateKey, depositAddress);
+      }
+      tx.then(async (txHash) => {
+        await editMessage(
+          chatId,
+          messageId,
+          withdrawSwapText(false, false, txHash)
+        );
+      }).catch(async (error) => {
+        await editMessage(
+          chatId,
+          messageId,
+          withdrawSwapText(false, true, error)
+        );
+      });
+    } else {
+      let message = invalidText(true, userText);
+      if (amountInText) {
+        const amount = findNumbersInDocstring(amountInText);
+        const firstSentence = `You are withdrawing ${amount} ETH.`;
+        message = `${firstSentence}\n\n${message}`;
+      }
+      await sendMessageWithForcedReply(chatId, message);
+    }
+    const endTime = Date.now();
+    console.log("Time taken:", endTime - startTime);
+    console.log("Withdraw text sent.");
+  } catch (error) {
+    console.error("Error in withdrawEthCommand:", error.message);
+    // Handle the error appropriately (e.g., send an error message to the user)
+  }
+}
+
+async function withdrawToCompleteCommand(chatId, userText, amount) {
+  try {
+    let number = "";
+    let numberType = "int";
+
+    const data = await queryPool(chatId);
+    const balance = await getBalance(data.address, true);
+    const invalidMessage = invalidText(false, userText, balance);
+
+    for (let i = 0; i < userText.length; i++) {
+      if (userText[i] == "," || userText[i] == ".") {
+        number += ".";
+        numberType = "float";
+      } else if (!isNaN(userText[i])) {
+        number += userText[i];
+      } else {
+        sendMessageWithForcedReply(chatId, invalidMessage);
+        return;
+      }
+    }
+
+    if (numberType == "float") {
+      number = parseFloat(number);
+    } else {
+      number = parseInt(number);
+    }
+
+    const validMessage = `You are withdrawing ${number} ETH.
+
+Reply with the destination address.`;
+
+    if (number > balance || number == 0) {
+      sendMessageWithForcedReply(chatId, invalidMessage);
+      return;
+    } else sendMessageWithForcedReply(chatId, validMessage);
+  } catch (error) {
+    console.error("Error in withdrawToCompleteCommand:", error.message);
+    // Handle the error appropriately (e.g., send an error message to the user)
+  }
+}
+
 async function closeCommand(chatId, messageId) {
   try {
     // Delete the last message
@@ -275,4 +396,7 @@ module.exports = {
   exportKeyCommand,
   exportKeyConfirmCommand,
   closeCommand,
+  withdrawEthCommand,
+  withdrawCompletedCommand,
+  withdrawToCompleteCommand,
 };

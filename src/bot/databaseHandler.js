@@ -61,9 +61,8 @@ async function updateWallet(chatId) {
   try {
     const deleteQuery = `DELETE FROM wallet_database WHERE t_id = $1`;
 
-    const result = await pool.query(deleteQuery, [chatId]);
+    await pool.query(deleteQuery, [chatId]);
 
-    console.log("Deleted wallet data:", result.rows[0]);
     const answer = await generateAndInsertWallet(chatId);
     console.log("Inserted wallet data:", answer);
   } catch (error) {
