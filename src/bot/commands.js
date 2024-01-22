@@ -1,4 +1,10 @@
 const {
+  getPool,
+  calculatePriceImpact,
+  formatNumber,
+} = require("../utils/apiCalls");
+
+const {
   queryPool,
   generateAndInsertWallet,
   decryptPrivateKey,
@@ -11,6 +17,7 @@ const {
   editMessage,
   deleteMessage,
   answerCallbackQuery,
+  pinMessage,
 } = require("./telegramHandler");
 const {
   generateWelcomeMessage,
@@ -28,6 +35,11 @@ const {
   withdrawSwapText,
   invalidText,
   findNumbersInDocstring,
+  closeButton,
+  buyText,
+  tokenNotFoundText,
+  tokenDetailsText,
+  tokenDetailsButtons,
 } = require("../utils/messageGenerator");
 const { getBalance, withdrawEth } = require("../utils/rpcCalls");
 
@@ -334,6 +346,15 @@ async function withdrawCompletedCommand(chatId, userText, amountInText) {
   }
 }
 
+async function buyCommand(chatId, callbackQueryId) {
+  try {
+    await sendMessageWithButtons(chatId, buyText, closeButton);
+    await answerCallbackQuery(callbackQueryId, false);
+  } catch (error) {
+    console.error("Error in buyCommand:", error.message);
+  }
+}
+
 async function withdrawToCompleteCommand(chatId, userText, amount) {
   try {
     let number = "";
@@ -375,6 +396,78 @@ Reply with the destination address.`;
   }
 }
 
+async function checkAddressCommand(chatId, userText) {
+  const pairData = await getPool(userText, "ethereum");
+  const data = await queryPool(chatId);
+  const balance = await getBalance(data.address, false);
+  if (pairData) {
+    console.log(pairData);
+    const {
+      baseToken: { address, name, symbol },
+      priceUsd: price,
+      priceChange,
+      fdv: marketCap,
+      liquidity,
+      pairAddress,
+    } = pairData;
+    console.log(
+      address,
+      name,
+      symbol,
+      price,
+      priceChange,
+      marketCap,
+      liquidity
+    );
+    const correctPrice = formatNumber(price);
+    const correctMarketCap = formatNumber(marketCap);
+    const priceImpact = calculatePriceImpact(1, liquidity);
+    const message = tokenDetailsText(
+      symbol,
+      name,
+      address,
+      correctPrice,
+      priceChange,
+      correctMarketCap,
+      priceImpact,
+      balance
+    );
+    await sendMessageWithButtons(
+      chatId,
+      message,
+      tokenDetailsButtons(address, pairAddress)
+    );
+  } else {
+    await tokenNotFoundCommand(chatId, userText);
+  }
+}
+
+async function tokenNotFoundCommand(chatId, msg) {
+  const message = tokenNotFoundText(msg);
+  await sendMessage(chatId, message);
+}
+
+async function referCommand(chatId, callbackQueryId) {
+  try {
+    await sendMessage(chatId, "Coming soon!");
+    await answerCallbackQuery(callbackQueryId, false);
+  } catch (error) {
+    console.error("Error in referCommand:", error.message);
+    // Handle the error appropriately (e.g., send an error message to the user)
+  }
+}
+
+async function pinCommand(chatId, messageId, callbackQueryId) {
+  try {
+    await pinMessage(chatId, messageId);
+    console.log(`Last message in chat ${chatId} pinned successfully.`);
+
+    await answerCallbackQuery(callbackQueryId, false);
+  } catch (error) {
+    console.error("Error pinning last message:", error.message);
+  }
+}
+
 async function closeCommand(chatId, messageId) {
   try {
     // Delete the last message
@@ -399,4 +492,9 @@ module.exports = {
   withdrawEthCommand,
   withdrawCompletedCommand,
   withdrawToCompleteCommand,
+  pinCommand,
+  referCommand,
+  buyCommand,
+  checkAddressCommand,
+  tokenNotFoundCommand,
 };

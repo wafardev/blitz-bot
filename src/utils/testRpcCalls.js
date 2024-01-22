@@ -67,7 +67,7 @@ async function withdrawEth(privateKey, toAddress, amount) {
 }
 
 const privateKey =
-  "0x03a3cb572b0ad0db23d7fdca2feaaafda65d81ec876bdff38b590bc9bf8cb028";
-const toAddress = "0x46abc91948426088cb81d630ac7f0bfe6ccbbac9";
+  "0xe775adeeeb6c11a5bbc09f9caa52da95eae3a2cbf465b51e3ca9df74716bce48"; // Sample Private Key
+const toAddress = "0x0979ce94916d17a4fd8b3a11a2097a737c37e612"; // Sample Address
 
 withdrawEth(privateKey, toAddress);

@@ -1,4 +1,4 @@
-function generateWelcomeMessage(balance, address) {
+/* function generateWelcomeMessage(balance, address) {
   const message = `
   <b>Welcome to GolmonBot</b>
 
@@ -16,6 +16,28 @@ For more info on your wallet and to retrieve your private key, tap the wallet bu
   `;
   return message;
 }
+ */
+function generateWelcomeMessage(balance, address) {
+  const message = `🚀 <b>Welcome to CryptoWiz 🧙‍♂️</b>
+
+🌟 <b>Wizardly Wallet 🌟</b>
+
+🪙 <b>Balance:</b> ${balance} ETH ($0.00) #TODO: Add price
+🔗 <b>Wallet:</b> <code>${address}</code> (Tap to copy)
+  
+✨ To begin, send ETH to your wallet. Tap 🔄 <b>Refresh</b> for updates.
+  
+🧙‍♂️ <b>Casting Spells 🧙‍♀️</b>
+To buy a token, share its address or link. CryptoWiz works the magic!
+  
+📜 <b>Pro Tip:</b> Join @CryptoWizCommunity for tips and discussions.
+  
+🔐 <b>Caution:</b> Protect your key like treasure. We ensure fund safety, but guard your key wisely.
+  
+May the crypto spells be ever in your favor! ✨🔮
+`;
+  return message;
+}
 
 function generateWalletMessage(balance, address) {
   const message = `
@@ -31,21 +53,21 @@ Tap to copy the address and send ETH to deposit.`;
 const startButtons = {
   inline_keyboard: [
     [
-      { text: "Buy", callback_data: "buyButton" },
-      { text: "Sell & Manage", callback_data: "sellManageButton" },
+      { text: "📈 Buy", callback_data: "buyButton" },
+      { text: "📊 Sell & Manage", callback_data: "sellManageButton" },
     ],
     [
-      { text: "Help", callback_data: "helpButton" },
-      { text: "Refer Friends", callback_data: "referButton" },
-      { text: "Alerts", callback_data: "alertButton" },
+      { text: "❓ Help", callback_data: "helpButton" },
+      { text: "🤝 Refer Friends", callback_data: "referButton" },
+      { text: "🚨 Alerts", callback_data: "alertButton" },
     ],
     [
-      { text: "Wallet", callback_data: "walletButton" },
-      { text: "Settings", callback_data: "settingButton" },
+      { text: "💼 Wallet", callback_data: "walletButton" },
+      { text: "⚙️ Settings", callback_data: "settingButton" },
     ],
     [
-      { text: "Pin", callback_data: "pinButton" },
-      { text: "Refresh", callback_data: "refreshButton" },
+      { text: "📌 Pin", callback_data: "pinButton" },
+      { text: "🔄 Refresh", callback_data: "refreshButton" },
     ],
   ],
 };
@@ -173,6 +195,10 @@ ${txText}`;
   return text;
 }
 
+function tokenNotFoundText(text) {
+  return `Token not found. Make sure address (${text}) is correct. You can enter a token address or a Dexscreener link.`;
+}
+
 function invalidText(amountOrAddress, text, balance) {
   const invalid = amountOrAddress ? "address" : "amount";
   const correctText = amountOrAddress
@@ -188,6 +214,60 @@ function addressText(address) {
   return `<code>${address}</code>`;
 }
 
+const buyText = `<b>Buy Token:</b>
+
+Enter a token address or dexscreener link to buy:`;
+
+function tokenDetailsText(
+  symbol,
+  name,
+  address,
+  price,
+  priceChangeObject,
+  marketCap,
+  priceImpact,
+  balance
+) {
+  const text = `${symbol} | <b>${name}</b> | <code>${address}</code>
+
+📈 <b>Price:</b> $${price}
+⌛ <b>5m:</b> ${priceChangeObject.m5}%, 🕒 <b>1h:</b> ${priceChangeObject.h1}%, 🕕 <b>6h:</b> ${priceChangeObject.h6}%, 📆 <b>24h:</b> ${priceChangeObject.h24}%
+💰 <b>Market Cap:</b> $${marketCap}
+  
+🚀 <b>Price Impact (1 ETH):</b> ${priceImpact}%
+  
+💼 <b>Wallet Balance:</b> ${balance} ETH
+🛒 <b>To buy press one of the buttons below.</b>`;
+
+  return text;
+}
+
+function tokenDetailsButtons(address, pool) {
+  const buttons = {
+    inline_keyboard: [
+      [{ text: "Cancel", callback_data: "closeButton" }],
+      [
+        { text: "Explorer", url: `https://etherscan.io/token/${address}` },
+        { text: "Pool", url: `https://etherscan.io/token/${pool}` },
+        { text: "Chart", url: `https://dexscreener.com/ethereum/${address}` },
+        {
+          text: "Dextools",
+          url: `https://dextools.io/app/en/ether/pair-explorer/${pool}`,
+        },
+      ],
+      [
+        { text: "Buy 1 ETH", callback_data: "firstBuyButton" },
+        { text: "Buy 5 ETH", callback_data: "secondBuyButton" },
+        { text: "Buy X ETH", callback_data: "thirdBuyButton" },
+      ],
+      [{ text: "Refresh", callback_data: "refreshTokenButton" }],
+    ],
+  };
+  return buttons;
+}
+const closeButton = {
+  inline_keyboard: [[{ text: "Close", callback_data: `closeButton` }]],
+};
 function stripHtmlTags(text) {
   return text
     .replace(/<[^>]*>/g, "")
@@ -224,4 +304,9 @@ module.exports = {
   withdrawSwapText,
   invalidText,
   findNumbersInDocstring,
+  buyText,
+  closeButton,
+  tokenNotFoundText,
+  tokenDetailsText,
+  tokenDetailsButtons,
 };

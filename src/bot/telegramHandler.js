@@ -51,6 +51,13 @@ async function deleteMessage(chatId, messageId) {
   });
 }
 
+async function pinMessage(chatId, messageId) {
+  await axios.post(`${TELEGRAM_API}/pinChatMessage`, {
+    chat_id: chatId,
+    message_id: messageId,
+  });
+}
+
 async function answerCallbackQuery(callbackQueryId, showAlert) {
   await axios.post(`${TELEGRAM_API}/answerCallbackQuery`, {
     callback_query_id: callbackQueryId,
@@ -65,4 +72,5 @@ module.exports = {
   editMessage,
   deleteMessage,
   answerCallbackQuery,
+  pinMessage,
 };
