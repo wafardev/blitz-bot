@@ -35,7 +35,11 @@ app.post(URI, async (req, res) => {
       const {
         callback_query: {
           from: { id: chatId },
-          message: { message_id: messageId, text: oldMessage },
+          message: {
+            message_id: messageId,
+            text: oldMessage,
+            reply_markup: inlineKeyboard,
+          },
           id: callbackQueryId,
           data,
         },
@@ -46,7 +50,14 @@ app.post(URI, async (req, res) => {
         `Received callback query data: ${data} from chat ID: ${chatId}`
       );
 
-      handleCallbacks(data, chatId, messageId, oldMessage, callbackQueryId);
+      handleCallbacks(
+        data,
+        chatId,
+        messageId,
+        oldMessage,
+        inlineKeyboard,
+        callbackQueryId
+      );
     } else if (req.body.message) {
       if (
         req.body.message.reply_to_message &&

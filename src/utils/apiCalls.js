@@ -1,6 +1,9 @@
 const axios = require("axios");
 
+const WETHMainnetContractAddress = "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91";
+
 async function getPool(tokenAddress, chain) {
+  // for Mainnet
   try {
     const response = await axios.get(
       `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`
@@ -21,49 +24,61 @@ async function getPool(tokenAddress, chain) {
   }
 }
 
-function calculatePriceImpact(amount, liquidity) {
-  const constantProductFormula = liquidity.base * liquidity.quote;
-  const marketPrice = liquidity.quote / liquidity.base;
-  const newNativeLiquidity = liquidity.quote + amount;
-  const newTokenLiquidity = constantProductFormula / newNativeLiquidity;
-  const tokensReceived = liquidity.base - newTokenLiquidity;
-  const pricePaidPerToken = amount / tokensReceived;
-  const priceImpact = (1 - marketPrice / pricePaidPerToken) * 100;
-  return priceImpact.toFixed(2);
-}
-
-function formatNumber(value) {
-  const num = parseFloat(value);
-
-  if (isNaN(num)) {
-    return value; // Return original value if it's not a valid number
-  }
-  let val = num;
-  let exposant = 0;
-  const absNum = Math.abs(num);
-
-  if (absNum >= 1e9) {
-    return (num / 1e9).toFixed(2) + "B";
-  } else if (absNum >= 1e6) {
-    return (num / 1e6).toFixed(2) + "M";
-  } else if (absNum >= 1e3) {
-    return (num / 1e3).toFixed(2) + "K";
-  } else if (absNum < 1e-3 && absNum > 1e-6) {
-    while (val < 1) {
-      val *= 10;
-      exposant++;
-    }
-    val = val.toFixed(2);
-    return val / Math.pow(10, exposant);
-  } else if (absNum <= 1e-6) {
-    while (val < 1) {
-      val *= 10;
-      exposant++;
-    }
-    return val.toFixed(2) + "e-" + exposant;
+async function getTokenInfo(address, tokenOrLP) {
+  // For Sepolia
+  const response = await axios.get(
+    `https://sepolia-api.ethplorer.io/getAddressInfo/${address}?apiKey=freekey`
+  );
+  if (tokenOrLP) {
+    return response.data.tokens;
   } else {
-    return num.toFixed(2);
+    return response.data.tokenInfo;
   }
 }
 
-module.exports = { getPool, calculatePriceImpact, formatNumber };
+async function getAmountInUSD(balance) {
+  const ethPrice = await getETHPrice();
+  const amountInUSD = balance * ethPrice;
+
+  return amountInUSD.toFixed(2);
+}
+
+async function getETHPrice() {
+  const response = await axios.get(
+    `https://api.dexscreener.com/latest/dex/tokens/${WETHMainnetContractAddress}`
+  );
+  return response.data.pairs[0].priceUsd;
+}
+
+async function getTokenPriceTestnet(poolAddress) {
+  try {
+    let WETHIndex;
+
+    const WETHPrice = await getETHPrice();
+
+    const response = await getTokenInfo(poolAddress, true);
+    if (response[0].tokenInfo.symbol == "WETH") {
+      WETHIndex = 0;
+    } else if (response[1].tokenInfo.symbol == "WETH") {
+      WETHIndex = 1;
+    } else {
+      console.error("Error:", error.message);
+    }
+    const WETHAmount = response[WETHIndex].rawBalance * 1;
+    const tokenAmount = response[1 - WETHIndex].rawBalance * 1;
+    const tokenPrice = (WETHAmount / tokenAmount) * WETHPrice;
+    console.log(response);
+    console.log("Token Price: " + tokenPrice);
+    const tokenPriceData = [tokenPrice, WETHAmount, tokenAmount];
+    return tokenPriceData;
+  } catch (error) {
+    console.error("Error:", error.message);
+  }
+}
+
+module.exports = {
+  getPool,
+  getTokenInfo,
+  getAmountInUSD,
+  getTokenPriceTestnet,
+};

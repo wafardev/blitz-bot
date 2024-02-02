@@ -33,7 +33,17 @@ async function sendMessageWithForcedReply(chatId, message) {
   return messageData;
 }
 
-async function editMessage(chatId, messageId, newText, newButtons) {
+async function editMessage(chatId, messageId, newText) {
+  const messageData = await axios.post(`${TELEGRAM_API}/editMessageText`, {
+    chat_id: chatId,
+    message_id: messageId,
+    text: newText,
+    parse_mode: "HTML",
+  });
+  return messageData;
+}
+
+async function editMessageWithButtons(chatId, messageId, newText, newButtons) {
   const messageData = await axios.post(`${TELEGRAM_API}/editMessageText`, {
     chat_id: chatId,
     message_id: messageId,
@@ -70,6 +80,7 @@ module.exports = {
   sendMessage,
   sendMessageWithForcedReply,
   editMessage,
+  editMessageWithButtons,
   deleteMessage,
   answerCallbackQuery,
   pinMessage,

@@ -1,3 +1,4 @@
 .env
 src/secret
 node_modules
+src/db
