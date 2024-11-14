@@ -1,4 +1,4 @@
-# Golmon Bot
+# Blitz Bot
 
 ## Introduction
 
